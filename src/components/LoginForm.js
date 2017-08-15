@@ -2,25 +2,55 @@ import React, { Component } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import firebase from 'firebase';
 
-import { Button, Card, CardSection, Input } from "./common";
+import { Button, Card, CardSection, Input, Spinner } from "./common";
 
 class LoginForm extends Component {
   state = {
     email: '',
     password: '',
-    error: ''
+    error: '',
+    loading: false
   };
 
   onButtonPress() {
-    this.setState({ error: '' });
+    this.setState({ error: '', loading: true });
 
     firebase.auth().signInWithEmailAndPassword(this.state.email, this.state.password)
+        .then(this.onLoginSuccess.bind(this))
         .catch(() => {
           firebase.auth().createUserWithEmailAndPassword(this.state.email, this.state.password)
-              .catch((e) => {
-                this.setState({ error: "Authentication Failed: " + e.message});
-              });
+              .then(this.onLoginSuccess.bind(this))
+              .catch(this.onLoginFailed.bind(this));
         });
+  }
+
+  renderButton() {
+    if (this.state.loading) {
+      return <Spinner size='small' />;
+    }
+    else {
+      return (
+          <Button onPress={this.onButtonPress.bind(this)}>
+            Log In
+          </Button>
+      )
+    }
+  }
+
+  onLoginSuccess() {
+    this.setState({
+      email: '',
+      password: '',
+      error: '',
+      loading: false
+    });
+  }
+
+  onLoginFailed(e) {
+    this.setState({
+      error: "Authentication Failed: " + e.message,
+      loading: false
+    });
   }
 
   render() {
@@ -49,9 +79,7 @@ class LoginForm extends Component {
           </Text>
 
           <CardSection>
-            <Button onPress={this.onButtonPress.bind(this)}>
-              Log In
-            </Button>
+            {this.renderButton()}
           </CardSection>
         </Card>
     );
